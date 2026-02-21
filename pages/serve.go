@@ -2,6 +2,7 @@ package pages
 
 import (
 	"net/http"
+	"strings"
 )
 
 func ServePages(root string) {
@@ -35,8 +36,35 @@ func ServePages(root string) {
 			}
 		}
 
+		// Determine status code for special error pages
+		statusCode := 200
+		if filepath != "" {
+			// extract filename from full path
+			parts := strings.Split(filepath, "/")
+			filename := parts[len(parts)-1]
+			if filename == "403.md" {
+				statusCode = 403
+			} else if filename == "404.md" {
+				statusCode = 404
+			} else if filename == "500.md" {
+				statusCode = 500
+			}
+		}
+
 		if filepath == "" {
+			// try to serve 404.md
+			notFoundPath := root + "/404.md"
+			page, err := ReadPageFile(root, notFoundPath)
+			if err == nil {
+				tmp, _ := ReadTemplateFile(root)
+				result := FormatTemplate(tmp, page)
+				w.WriteHeader(404)
+				w.Header().Add("Content-Type", "text/html")
+				w.Write([]byte(result))
+				return
+			}
 			w.WriteHeader(404)
+			w.Write([]byte("404 Not Found"))
 			return
 		}
 
@@ -56,7 +84,7 @@ func ServePages(root string) {
 
 		result := FormatTemplate(tmp, page)
 
-		w.WriteHeader(200)
+		w.WriteHeader(statusCode)
 		w.Header().Add("Content-Type", "text/html")
 		w.Write([]byte(result))
 	})
