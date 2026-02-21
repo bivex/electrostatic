@@ -10,6 +10,9 @@ func TestScanAllFilepaths(t *testing.T) {
 	root := "./root"
 
 	expected := []string{
+		root + "/403.md",
+		root + "/404.md",
+		root + "/500.md",
 		root + "/dir/index.md",
 		root + "/dir2/index.md",
 		root + "/dir2/subdir/index.md",
