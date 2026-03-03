@@ -9,9 +9,7 @@ import (
 	"github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/gomarkdown/markdown"
-	mdHtml "github.com/gomarkdown/markdown/html"
-	"github.com/gomarkdown/markdown/parser"
+	"github.com/russross/blackfriday/v2"
 )
 
 type CodeBlock struct {
@@ -23,17 +21,13 @@ type CodeBlock struct {
 func MdToHTML(input []byte) []byte {
 	codeBlocks, md := ParseCodeBlocks(input)
 
-	// create markdown parser with extensions
-	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
-	p := parser.NewWithExtensions(extensions)
-	doc := p.Parse(md)
+	// Use blackfriday with HTML support enabled
+	extensions := blackfriday.CommonExtensions | blackfriday.AutoHeadingIDs | blackfriday.NoEmptyLineBeforeBlock
+	renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{
+		Flags: blackfriday.CommonHTMLFlags | blackfriday.HrefTargetBlank,
+	})
 
-	// create HTML renderer with extensions
-	htmlFlags := mdHtml.CommonFlags | mdHtml.HrefTargetBlank | mdHtml.LazyLoadImages | mdHtml.NofollowLinks | mdHtml.NoreferrerLinks | mdHtml.NoopenerLinks
-	opts := mdHtml.RendererOptions{Flags: htmlFlags}
-	renderer := mdHtml.NewRenderer(opts)
-
-	h := markdown.Render(doc, renderer)
+	h := blackfriday.Run(md, blackfriday.WithExtensions(extensions), blackfriday.WithRenderer(renderer))
 
 	return RenderCode(h, codeBlocks)
 }

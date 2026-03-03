@@ -1,9 +1,15 @@
 package static
 
 import (
+	"mime"
 	"net/http"
 	"os"
 )
+
+func init() {
+	// Ensure CSS files have correct MIME type
+	mime.AddExtensionType(".css", "text/css")
+}
 
 func ServeStatic(root string) {
 	fsAssets := http.FileServer(http.Dir(root + "/assets"))
@@ -25,6 +31,10 @@ func ServeStatic(root string) {
 		name := entry.Name()
 		filePath := root + "/public/" + name
 		http.HandleFunc("/"+name, func(w http.ResponseWriter, r *http.Request) {
+			// Explicitly set Content-Type for CSS files
+			if len(name) >= 4 && name[len(name)-4:] == ".css" {
+				w.Header().Set("Content-Type", "text/css; charset=utf-8")
+			}
 			http.ServeFile(w, r, filePath)
 		})
 	}
